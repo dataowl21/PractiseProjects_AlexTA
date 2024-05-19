@@ -1,0 +1,189 @@
+--Data Cleaning Layoffs
+
+Select *
+From layoffs
+
+
+--1. Remove Duplicates 
+--2. Standardize the Data (spelling)
+--3. Remove Null Values or blank values
+--4. Dropping Columns that are not needed
+
+
+--Made a copy of the raw table
+
+SELECT *
+INTO layoffs_staging
+FROM layoffs
+
+
+
+--1 Remove Duplicates 
+
+SELECT *,
+       ROW_NUMBER() OVER (
+           PARTITION BY company,[location], industry, total_laid_off, percentage_laid_off, [date], stage,country, funds_raised_millions
+           ORDER BY [date]  
+       ) AS row_num
+FROM layoffs_staging;
+
+
+-- Cretaed CTE
+
+WITH duplicate_cte AS
+(
+SELECT *,
+       ROW_NUMBER() OVER (
+           PARTITION BY company,[location], industry, total_laid_off, percentage_laid_off, [date], stage,country, funds_raised_millions
+           ORDER BY [date]  
+       ) AS row_num
+FROM layoffs_staging
+)
+SELECT *
+FROM duplicate_cte
+WHERE row_num >1;
+
+
+----DOUBLE CHECK OF THE DUPLICATES
+Select *
+From layoffs_staging
+WHERE company = 'Cazoo'
+
+
+----DELETE DUPLICATES
+
+WITH duplicate_cte AS
+(
+SELECT *,
+       ROW_NUMBER() OVER (
+           PARTITION BY company,[location], industry, total_laid_off, percentage_laid_off, [date], stage,country, funds_raised_millions
+           ORDER BY [date]  
+       ) AS row_num
+FROM layoffs_staging
+)
+DELETE
+FROM duplicate_cte
+WHERE row_num >1;
+
+--2 Standardizing data 
+
+
+--TRIM
+Select company, TRIM(company)
+From layoffs_staging
+
+
+UPDATE layoffs_staging
+SET company = TRIM(company)
+
+--Updating industries because we had "Crypto Tech, Crypto currencies" changed it to "Crypto"
+
+Select DISTINCT industry
+From layoffs_staging
+
+
+Select *
+From layoffs_staging
+WHERE industry LIKE 'Crypto%';
+
+
+UPDATE layoffs_staging
+SET industry = 'Crypto'
+WHERE industry LIKE 'Crypto%';
+
+
+--Updating country, because it had "United States." 
+
+Select DISTINCT country, TRIM(Trailing '.' FROM country)
+From layoffs_staging
+Order by 1
+
+
+UPDATE layoffs_staging
+SET country = TRIM(Trailing '.' FROM country)
+WHERE country LIKE 'United States%';
+
+--Updating date's data type and format
+
+
+SELECT [date],
+       CONVERT(Date, [date])
+FROM layoffs_staging;
+
+ 
+ Update layoffs_staging
+ SET [date] = CONVERT(Date, [date])
+
+ --DID't workout that is why I decided to crete new column "formatted date"
+
+ -- Step 1: Add a new column to the table
+ALTER TABLE layoffs_staging
+ADD formatted_date VARCHAR(10); -- Assuming the desired format is 'MM/dd/yyyy'
+
+-- Step 2: Update the new column with properly formatted dates
+UPDATE layoffs_staging
+SET formatted_date = CONVERT(varchar(10), [date], 101); -- Format '101' represents 'MM/dd/yyyy'
+
+
+
+-- 3 Remove Null Values or blank values
+
+
+SELECT *
+FROM layoffs_staging
+where total_laid_off IS NULL
+and percentage_laid_off = 'NULL'
+
+SELECT *
+FROM layoffs_staging
+Where industry is NULL
+OR industry = ' '
+
+SELECT*
+FROM layoffs_staging
+WHERE company = 'Airbnb'
+
+SELECT * 
+FROM layoffs_staging
+WHERE company LIKE 'Bally%'
+
+-- Joint with the same table to update where industry is NULL or blank to the same industry as Company with the same name 
+
+SELECT t1.industry, t2.industry
+FROM layoffs_staging t1
+JOIN layoffs_staging t2
+    ON t1.company = t2.company
+WHERE (t1.industry is NULL OR t1.industry = ' ')
+AND t2.industry is NOT NULL
+
+
+UPDATE t1
+SET t1.industry = t2.industry
+FROM layoffs_staging t1
+JOIN layoffs_staging t2 ON t1.company = t2.company
+WHERE (t1.industry IS NULL OR t1.industry = ' ')
+AND t2.industry IS NOT NULL;
+
+
+
+-- Decided to delete rows that  have both "total_laid_off" and "percentage_laid_off" as NULL values
+
+SELECT *
+FROM layoffs_staging
+where total_laid_off IS NULL
+and percentage_laid_off = 'NULL'
+
+
+DELETE
+FROM layoffs_staging
+where total_laid_off IS NULL
+and percentage_laid_off = 'NULL'
+
+
+--4 Dropping Columns that are not needed
+
+Select *
+From layoffs_staging
+
+ALTER TABLE layoffs_staging
+DROP COLUMN [date]
