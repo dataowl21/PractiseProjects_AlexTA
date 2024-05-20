@@ -13,7 +13,7 @@ From layoffs
 --Made a copy of the raw table
 
 SELECT *
-INTO layoffs_staging
+INTO layoffs_staging2
 FROM layoffs
 
 
@@ -25,7 +25,7 @@ SELECT *,
            PARTITION BY company,[location], industry, total_laid_off, percentage_laid_off, [date], stage,country, funds_raised_millions
            ORDER BY [date]  
        ) AS row_num
-FROM layoffs_staging;
+FROM layoffs_staging2;
 
 
 -- Cretaed CTE
@@ -37,7 +37,7 @@ SELECT *,
            PARTITION BY company,[location], industry, total_laid_off, percentage_laid_off, [date], stage,country, funds_raised_millions
            ORDER BY [date]  
        ) AS row_num
-FROM layoffs_staging
+FROM layoffs_staging2
 )
 SELECT *
 FROM duplicate_cte
@@ -46,7 +46,7 @@ WHERE row_num >1;
 
 ----DOUBLE CHECK OF THE DUPLICATES
 Select *
-From layoffs_staging
+From layoffs_staging2
 WHERE company = 'Cazoo'
 
 
@@ -59,7 +59,7 @@ SELECT *,
            PARTITION BY company,[location], industry, total_laid_off, percentage_laid_off, [date], stage,country, funds_raised_millions
            ORDER BY [date]  
        ) AS row_num
-FROM layoffs_staging
+FROM layoffs_staging2
 )
 DELETE
 FROM duplicate_cte
@@ -70,24 +70,24 @@ WHERE row_num >1;
 
 --TRIM
 Select company, TRIM(company)
-From layoffs_staging
+From layoffs_staging2
 
 
-UPDATE layoffs_staging
+UPDATE layoffs_staging2
 SET company = TRIM(company)
 
 --Updating industries because we had "Crypto Tech, Crypto currencies" changed it to "Crypto"
 
 Select DISTINCT industry
-From layoffs_staging
+From layoffs_staging2
 
 
 Select *
-From layoffs_staging
+From layoffs_staging2
 WHERE industry LIKE 'Crypto%';
 
 
-UPDATE layoffs_staging
+UPDATE layoffs_staging2
 SET industry = 'Crypto'
 WHERE industry LIKE 'Crypto%';
 
@@ -95,11 +95,11 @@ WHERE industry LIKE 'Crypto%';
 --Updating country, because it had "United States." 
 
 Select DISTINCT country, TRIM(Trailing '.' FROM country)
-From layoffs_staging
+From layoffs_staging2
 Order by 1
 
 
-UPDATE layoffs_staging
+UPDATE layoffs_staging2
 SET country = TRIM(Trailing '.' FROM country)
 WHERE country LIKE 'United States%';
 
@@ -108,20 +108,20 @@ WHERE country LIKE 'United States%';
 
 SELECT [date],
        CONVERT(Date, [date])
-FROM layoffs_staging;
+FROM layoffs_staging2;
 
  
- Update layoffs_staging
+ Update layoffs_staging2
  SET [date] = CONVERT(Date, [date])
 
  --DID't workout that is why I decided to crete new column "formatted date"
 
  -- Step 1: Add a new column to the table
-ALTER TABLE layoffs_staging
+ALTER TABLE layoffs_staging2
 ADD formatted_date VARCHAR(10); -- Assuming the desired format is 'MM/dd/yyyy'
 
 -- Step 2: Update the new column with properly formatted dates
-UPDATE layoffs_staging
+UPDATE layoffs_staging2
 SET formatted_date = CONVERT(varchar(10), [date], 101); -- Format '101' represents 'MM/dd/yyyy'
 
 
@@ -130,28 +130,28 @@ SET formatted_date = CONVERT(varchar(10), [date], 101); -- Format '101' represen
 
 
 SELECT *
-FROM layoffs_staging
+FROM layoffs_staging2
 where total_laid_off IS NULL
 and percentage_laid_off = 'NULL'
 
 SELECT *
-FROM layoffs_staging
+FROM layoffs_staging2
 Where industry is NULL
 OR industry = ' '
 
 SELECT*
-FROM layoffs_staging
+FROM layoffs_staging2
 WHERE company = 'Airbnb'
 
 SELECT * 
-FROM layoffs_staging
+FROM layoffs_staging2
 WHERE company LIKE 'Bally%'
 
 -- Joint with the same table to update where industry is NULL or blank to the same industry as Company with the same name 
 
 SELECT t1.industry, t2.industry
-FROM layoffs_staging t1
-JOIN layoffs_staging t2
+FROM layoffs_staging2 t1
+JOIN layoffs_staging2 t2
     ON t1.company = t2.company
 WHERE (t1.industry is NULL OR t1.industry = ' ')
 AND t2.industry is NOT NULL
@@ -159,8 +159,8 @@ AND t2.industry is NOT NULL
 
 UPDATE t1
 SET t1.industry = t2.industry
-FROM layoffs_staging t1
-JOIN layoffs_staging t2 ON t1.company = t2.company
+FROM layoffs_staging2 t1
+JOIN layoffs_staging2 t2 ON t1.company = t2.company
 WHERE (t1.industry IS NULL OR t1.industry = ' ')
 AND t2.industry IS NOT NULL;
 
@@ -169,13 +169,13 @@ AND t2.industry IS NOT NULL;
 -- Decided to delete rows that  have both "total_laid_off" and "percentage_laid_off" as NULL values
 
 SELECT *
-FROM layoffs_staging
+FROM layoffs_staging2
 where total_laid_off IS NULL
 and percentage_laid_off = 'NULL'
 
 
 DELETE
-FROM layoffs_staging
+FROM layoffs_staging2
 where total_laid_off IS NULL
 and percentage_laid_off = 'NULL'
 
@@ -183,7 +183,8 @@ and percentage_laid_off = 'NULL'
 --4 Dropping Columns that are not needed
 
 Select *
-From layoffs_staging
+From layoffs_staging2
 
-ALTER TABLE layoffs_staging
+ALTER TABLE layoffs_staging2
 DROP COLUMN [date]
+
