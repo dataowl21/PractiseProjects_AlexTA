@@ -1,0 +1,121 @@
+
+--Change of data types
+
+ALTER TABLE layoffs_staging2
+ALTER COLUMN total_laid_off INTEGER;
+
+ALTER TABLE layoffs_staging2
+ALTER COLUMN percentage_laid_off float;
+
+ALTER TABLE layoffs_staging2
+ALTER COLUMN formatted_date date;
+
+--Exploratory Data Analysis 
+
+SELECT *
+FROM layoffs_staging2
+
+SELECT MAX(total_laid_off), MAX(percentage_laid_off)
+FROM layoffs_staging2;
+
+SELECT *
+FROM layoffs_staging2
+WHERE percentage_laid_off = '1.00'
+ORDER BY total_laid_off DESC;
+
+SELECT *
+FROM layoffs_staging2
+WHERE company LIKE 'Ahead%';
+
+SELECT company, SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY company
+Order BY 2 desc;
+
+SELECT industry, SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY industry
+Order BY 2 desc;
+
+
+SELECT country, SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY country
+Order BY 2 desc;
+
+SELECT YEAR(formatted_date), SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY YEAR(formatted_date)
+Order BY 1 desc;
+
+SELECT stage, SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY stage
+Order BY 2 desc;
+
+SELECT company, AVG(percentage_laid_off) as Percentage_Laid_Off
+FROM layoffs_staging2
+GROUP BY company
+Order BY 2 desc;
+
+
+
+SELECT YEAR(formatted_date) AS [YEAR],
+       MONTH(formatted_date) AS [MONTH], 
+       SUM(total_laid_off) AS total_laid_off
+FROM layoffs_staging2
+WHERE formatted_date IS NOT NULL
+GROUP BY YEAR(formatted_date), MONTH(formatted_date)
+ORDER BY [YEAR], [MONTH] ASC;
+
+SELECT CONCAT(YEAR(formatted_date), '-', MONTH(formatted_date)) AS YearMonth,
+       SUM(total_laid_off) AS total_off
+FROM layoffs_staging2
+WHERE formatted_date IS NOT NULL
+GROUP BY YEAR(formatted_date), MONTH(formatted_date)
+ORDER BY YEAR(formatted_date), MONTH(formatted_date) ASC;
+
+
+WITH Rolling_Total AS
+(
+    SELECT CONCAT(YEAR(formatted_date),'-', MONTH(formatted_date)) AS YearMonth,
+           SUM(total_laid_off) AS total_off
+    FROM layoffs_staging2
+    WHERE formatted_date IS NOT NULL
+    GROUP BY YEAR(formatted_date), MONTH(formatted_date)
+)
+SELECT YearMonth, total_off,
+       SUM(total_off) OVER (ORDER BY YearMonth) AS rolling_total
+FROM Rolling_Total
+ORDER BY 1 ASC
+
+
+
+SELECT company, SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY company
+Order BY 2 desc;
+
+
+
+SELECT company,YEAR(formatted_date), SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY company,YEAR(formatted_date)
+ORDER BY 3 DESC
+
+
+WITH Company_YEAR(company,years,total_laid_off) AS
+(
+SELECT company,YEAR(formatted_date) as 'YEAR', SUM(total_laid_off) as Total_Laid_Off
+FROM layoffs_staging2
+GROUP BY company,YEAR(formatted_date)
+), Company_Year_Rank AS
+(SELECT *, 
+DENSE_RANK() OVER(PARTITION BY years ORDER BY total_laid_off DESC) AS Ranking
+FROM Company_YEAR
+WHERE years is not null
+)
+SELECT *
+FROM Company_Year_Rank
+WHERE Ranking <= 5
+ORDER BY years asc, Ranking asc
